@@ -1,0 +1,11 @@
+.comment-container {
+    white-space:nowrap;
+}
+
+.comment {
+    display:inline-block;
+    width:350px;
+    white-space:normal;
+    vertical-align:top;
+    margin:1ex;
+}

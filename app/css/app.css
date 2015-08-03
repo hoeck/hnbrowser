@@ -2,10 +2,21 @@
     white-space:nowrap;
 }
 
-.comment {
+.comment-container > div {
     display:inline-block;
-    width:350px;
+    width:450px;
     white-space:normal;
     vertical-align:top;
     margin:1ex;
+}
+
+.comment-container > div pre {
+    overflow:auto;
+}
+
+/* debug */
+.comment-container > div {
+    border: 1px solid #999;
+    padding: 1ex;
+    margin: 0.25ex;
 }

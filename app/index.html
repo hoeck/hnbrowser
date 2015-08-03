@@ -12,7 +12,7 @@
     <script type="text/javascript" src="js/app.js"></script>
   </head>
   <body>
-    <a href="#/stories/9918365">Example Story</a>
+    <a href="#/stories/9981799">Example Story</a>
 
     <div class="view-container">
       <div ng-view class="view-frame"></div>
@@ -26,11 +26,11 @@
     </script>
 
     <script type="text/html" id="StoryTmpl">
-      {{ story }}
       <h2> {{ story.title }} </h2>
-      <div class="comment-container">
-        <div class="comment" ng-repeat="k in kids" ng-bind-html="k.text">
-        </div>
+      <div class="comment-container" ng-repeat="k in story.kids_full">
+        <div ng-bind-html="k.text"></div>
+        <div ng-bind-html="k.kids_full[0].text"></div>
+        <div ng-bind-html="k.kids_full[0].kids_full[0].text"></div>
       </div>
     </script>
   </body>

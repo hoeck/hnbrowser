@@ -23,14 +23,14 @@ hnBrowser.config(['$routeProvider', function ($routeProvider) {
             });
 }]);
 
-hnBrowserServices.factory('Stories', ['$q', '$firebaseArray', '$firebaseObject', function ($q, $firebaseArray, $firebaseObject) {
-    var storyService = {},
+hnBrowserServices.factory('Items', ['$q', '$firebaseArray', '$firebaseObject', function ($q, $firebaseArray, $firebaseObject) {
+    var service = {},
         url = 'https://hacker-news.firebaseio.com/v0',
         fireRef = new Firebase(url);
 
     // https://hacker-news.firebaseio.com/v0/topstories.json
     // https://hacker-news.firebaseio.com/v0/item/XXXX.json
-    storyService.getTopStories = function () {
+    service.getTopStories = function () {
         var topstoryIds = $firebaseArray(fireRef.child('topstories'));
 
         return topstoryIds.$loaded().then(function () {
@@ -43,7 +43,7 @@ hnBrowserServices.factory('Stories', ['$q', '$firebaseArray', '$firebaseObject',
     /**
      * Load an item (story, comment) an return it.
      */
-    storyService.loadItem = function (itemId) {
+    service.loadItem = function (itemId) {
         return $firebaseObject(fireRef.child('item').child(itemId));
     };
 
@@ -55,12 +55,12 @@ hnBrowserServices.factory('Stories', ['$q', '$firebaseArray', '$firebaseObject',
      * Set recur to a positive integer to only load the given amount
      * of levels.
      */
-    storyService.loadKids = function (story, recur) {
-        story.kids_full = _.map(story.kids, function (itemId) {
+    service.loadKids = function (item, recur) {
+        item.kids_full = _.map(item.kids, function (itemId) {
             var o = $firebaseObject(fireRef.child('item').child(itemId));
             if (recur) {
                 o.$loaded().then(function(x) {
-                    storyService.loadKids(x, (typeof recur === 'number') ? recur-1 : recur);
+                    service.loadKids(x, (typeof recur === 'number') ? recur-1 : recur);
                 });
             }
             return o;
@@ -73,26 +73,26 @@ hnBrowserServices.factory('Stories', ['$q', '$firebaseArray', '$firebaseObject',
      * recur is apassed to .loadKids to control how many levels of
      * kids to load.
      */
-    storyService.getFullStory = function (itemId, recur) {
-        var story = storyService.loadItem(itemId);
-        story.$loaded().then(function () { storyService.loadKids(story, recur); });
-        return story;
+    service.loadFullItem = function (itemId, recur) {
+        var item = service.loadItem(itemId);
+        item.$loaded().then(function () { service.loadKids(item, recur); });
+        return item;
     };
 
-    return storyService;
+    return service;
 }]);
 
-hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Stories', function ($scope, Stories) {
+hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($scope, items) {
     $scope.stories = [];
 
-    Stories.getTopStories().then(function (stories) {
+    items.getTopStories().then(function (stories) {
         $scope.stories = stories;
     });
 }]);
 
-hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', 'Stories', function ($scope, $routeParams, storyService) {
+hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', 'Items', function ($scope, $routeParams, items) {
     var url = 'https://hacker-news.firebaseio.com/v0',
         fireRef = new Firebase(url);
 
-    $scope.story = storyService.getFullStory($routeParams.itemId, 2);
+    $scope.story = items.loadFullItem($routeParams.itemId, 2);
 }]);

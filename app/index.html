@@ -28,9 +28,10 @@
     <script type="text/html" id="StoryTmpl">
       <h2> {{ story.title }} </h2>
       <div class="comment-container" ng-repeat="k in story.kids_full">
-        <div ng-bind-html="k.text"></div>
-        <div ng-bind-html="k.kids_full[0].text"></div>
-        <div ng-bind-html="k.kids_full[0].kids_full[0].text"></div>
+        <div ng-swipe-left="$parent.down(k)"
+             ng-swipe-right="$parent.up()"
+             ng-bind-html="k.text">
+        </div>
       </div>
     </script>
   </body>

@@ -1,10 +1,12 @@
-.comment-container {
-    white-space:nowrap;
+html {
+    font-size: medium;
+}
+
+pre {
+    font-size: large;
 }
 
 .comment-container > div {
-    display:inline-block;
-    width:450px;
     white-space:normal;
     vertical-align:top;
     margin:1ex;

@@ -1,6 +1,6 @@
 'use strict';
 
-var hnBrowser = angular.module('hnBrowser', ['hnBrowserServices', 'hnBrowserControllers', 'ngRoute', 'ngSanitize']),
+var hnBrowser = angular.module('hnBrowser', ['hnBrowserServices', 'hnBrowserControllers', 'ngRoute', 'ngSanitize', 'ngTouch']),
     hnBrowserControllers = angular.module('hnBrowserControllers', []),
     hnBrowserServices = angular.module('hnBrowserServices', ['firebase']);
 
@@ -90,9 +90,18 @@ hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($
     });
 }]);
 
-hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', 'Items', function ($scope, $routeParams, items) {
+hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', '$route', 'Items', function ($scope, $routeParams, $route, items) {
     var url = 'https://hacker-news.firebaseio.com/v0',
         fireRef = new Firebase(url);
 
-    $scope.story = items.loadFullItem($routeParams.itemId, 2);
+    // load item and its children
+    $scope.story = items.loadFullItem($routeParams.itemId, 1);
+
+    // navigate through the items
+    $scope.down = function (item) {
+        $route.updateParams({itemId:item.id});
+    };
+    $scope.up = function () {
+        $route.updateParams({itemId:$scope.story.parent});
+    };
 }]);

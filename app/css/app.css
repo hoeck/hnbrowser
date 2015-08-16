@@ -6,18 +6,24 @@ pre {
     font-size: large;
 }
 
-.comment-container > div {
+.comment {
     white-space:normal;
     vertical-align:top;
     margin:1ex;
 }
 
-.comment-container > div pre {
+.comment pre {
     overflow:auto;
 }
 
+.swipe-up {
+    position:absolute;
+    top:0; right:0; bottom:0; left:0;
+    z-index: -1;
+}
+
 /* debug */
-.comment-container > div {
+.comment {
     border: 1px solid #999;
     padding: 1ex;
     margin: 0.25ex;

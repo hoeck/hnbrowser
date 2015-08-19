@@ -2,7 +2,37 @@ html {
     font-size: medium;
 }
 
-pre {
+.view-frame.ng-enter {
+    transform:translateX(100%);
+    transition: .2s ease-out all;
+}
+
+.view-frame.ng-enter.ng-enter-active {
+    transform:translateX(0%);
+}
+
+.view-frame {
+    position: absolute;
+    top:0; right:0; bottom:0; left:0;
+}
+
+.view-frame.ng-leave {
+    transform:translateX(0%);
+    transition: .2s ease-out all;
+}
+
+.view-frame.ng-leave.ng-leave-active {
+    transform:translateX(-100%);
+}
+
+
+.comment-container {
+    position:absolute;
+    top:0; right:0; bottom:0; left:0;
+}
+
+.comment pre {
+    overflow:auto;
     font-size: large;
 }
 
@@ -12,19 +42,14 @@ pre {
     margin:1ex;
 }
 
-.comment pre {
-    overflow:auto;
-}
-
-.swipe-up {
-    position:absolute;
-    top:0; right:0; bottom:0; left:0;
-    z-index: -1;
-}
 
 /* debug */
 .comment {
     border: 1px solid #999;
     padding: 1ex;
     margin: 0.25ex;
+}
+
+.view-frame {
+    overflow-y: scroll;
 }

@@ -6,6 +6,7 @@
     <script type="text/javascript" src="https://cdn.firebase.com/js/client/2.2.2/firebase.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-touch.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-animate.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-route.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.3/angular-sanitize.min.js"></script>
     <script type="text/javascript" src="https://cdn.firebase.com/libs/angularfire/1.1.2/angularfire.min.js"></script>
@@ -26,16 +27,15 @@
     </script>
 
     <script type="text/html" id="StoryTmpl">
-      <h2> {{ story.title }} </h2>
-      <div class="comment"
-           ng-swipe-right="$parent.up()"
-           ng-swipe-left="$parent.down(k)"
-           ng-repeat="k in story.kids_full"
-           ng-bind-html="k.text">
+      <div class="comment-container" ng-swipe-right="up()">
+        <h2> {{ story.title }} </h2>
+        <div class="comment"
+             ng-swipe-right="$parent.up()"
+             ng-swipe-left="$parent.down(k)"
+             ng-repeat="k in story.kids_full"
+             ng-bind-html="k.text">
+        </div>
       </div>
-      <!-- empty div in the background to catch right-swipes for going
-           back to the parent item -->
-      <div class="swipe-up" ng-swipe-right="up()"></div>
     </script>
   </body>
 </html>

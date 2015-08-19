@@ -1,6 +1,6 @@
 'use strict';
 
-var hnBrowser = angular.module('hnBrowser', ['hnBrowserServices', 'hnBrowserControllers', 'ngRoute', 'ngSanitize', 'ngTouch']),
+var hnBrowser = angular.module('hnBrowser', ['hnBrowserServices', 'hnBrowserControllers', 'ngRoute', 'ngSanitize', 'ngTouch', 'ngAnimate']),
     hnBrowserControllers = angular.module('hnBrowserControllers', []),
     hnBrowserServices = angular.module('hnBrowserServices', ['firebase']);
 

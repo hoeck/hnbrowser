@@ -42,8 +42,17 @@ html {
     margin:1ex;
 }
 
+.comment .header,
+.comment .footer {
+    margin: 1ex 0;
+}
+
+.comment .footer {
+    text-align: right;
+}
 
 /* debug */
+
 .comment {
     border: 1px solid #999;
     padding: 1ex;

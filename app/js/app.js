@@ -90,7 +90,7 @@ hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($
     });
 }]);
 
-hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', '$route', 'Items', function ($scope, $routeParams, $route, items) {
+hnBrowserControllers.controller('StoryCtrl', ['$scope', '$rootElement', '$routeParams', '$route', 'Items', function ($scope, $rootElement, $routeParams, $route, items) {
     var url = 'https://hacker-news.firebaseio.com/v0',
         fireRef = new Firebase(url);
 
@@ -99,9 +99,15 @@ hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', '$route'
 
     // navigate through the items
     $scope.down = function (item) {
+        // set a class directly on the root element
+        // cannot use rootscope -> propagates too slow, is only set
+        // when the animation has already finished
+        // TOOD: use a service/directive for this!
+        $rootElement.removeClass('up').addClass('down');
         $route.updateParams({itemId:item.id});
     };
     $scope.up = function () {
+        $rootElement.removeClass('down').addClass('up');
         $route.updateParams({itemId:$scope.story.parent});
     };
 }]);

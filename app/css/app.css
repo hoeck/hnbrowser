@@ -2,29 +2,51 @@ html {
     font-size: medium;
 }
 
-.view-frame.ng-enter {
-    transform:translateX(100%);
-    transition: .2s ease-out all;
-}
 
-.view-frame.ng-enter.ng-enter-active {
-    transform:translateX(0%);
-}
+/* TODO: SASS */
 
 .view-frame {
     position: absolute;
     top:0; right:0; bottom:0; left:0;
 }
 
-.view-frame.ng-leave {
+
+.down .view-frame.ng-enter {
+    transform:translateX(100%);
+    transition: .2s ease-out all;
+}
+
+.down .view-frame.ng-enter.ng-enter-active {
+    transform:translateX(0%);
+}
+
+.down .view-frame.ng-leave {
     transform:translateX(0%);
     transition: .2s ease-out all;
 }
 
-.view-frame.ng-leave.ng-leave-active {
+.down .view-frame.ng-leave.ng-leave-active {
     transform:translateX(-100%);
 }
 
+
+.up .view-frame.ng-enter {
+    transform:translateX(-100%);
+    transition: .2s ease-out all;
+}
+
+.up .view-frame.ng-enter.ng-enter-active {
+    transform:translateX(0%);
+}
+
+.up .view-frame.ng-leave {
+    transform:translateX(0%);
+    transition: .2s ease-out all;
+}
+
+.up .view-frame.ng-leave.ng-leave-active {
+    transform:translateX(100%);
+}
 
 .comment-container {
     position:absolute;

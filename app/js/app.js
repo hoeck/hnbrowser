@@ -23,6 +23,9 @@ hnBrowser.config(['$routeProvider', function ($routeProvider) {
             });
 }]);
 
+/**
+ * Service that deals with loading HN items (stories, comments).
+ */
 hnBrowserServices.factory('Items', ['$q', '$firebaseArray', '$firebaseObject', function ($q, $firebaseArray, $firebaseObject) {
     var service = {},
         url = 'https://hacker-news.firebaseio.com/v0',
@@ -82,6 +85,28 @@ hnBrowserServices.factory('Items', ['$q', '$firebaseArray', '$firebaseObject', f
     return service;
 }]);
 
+/**
+ * Service that takes care of comment navigation details.
+ *
+ * Set the appropriate URL and the viewAnimationClass on the
+ * rootScope to control the direction of the swipe animation.
+ */
+hnBrowserServices.factory('ItemNavigation', ['$route', '$rootScope', function ($route, $rootScope) {
+    var service = {};
+
+    service.down = function (itemId) {
+        $rootScope.viewAnimationClass = 'down';
+        $route.updateParams({itemId:itemId});
+    };
+
+    service.up = function (itemId) {
+        $rootScope.viewAnimationClass = 'up';
+        $route.updateParams({itemId:itemId});
+    };
+
+    return service;
+}]);
+
 hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($scope, items) {
     $scope.stories = [];
 
@@ -90,24 +115,19 @@ hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($
     });
 }]);
 
-hnBrowserControllers.controller('StoryCtrl', ['$scope', '$rootElement', '$routeParams', '$route', 'Items', function ($scope, $rootElement, $routeParams, $route, items) {
+hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', 'ItemNavigation', 'Items', function ($scope, $routeParams, ItemNavigation, items) {
     var url = 'https://hacker-news.firebaseio.com/v0',
         fireRef = new Firebase(url);
 
     // load item and its children
     $scope.story = items.loadFullItem($routeParams.itemId, 1);
 
-    // navigate through the items
+    // navigation
     $scope.down = function (item) {
-        // set a class directly on the root element
-        // cannot use rootscope -> propagates too slow, is only set
-        // when the animation has already finished
-        // TOOD: use a service/directive for this!
-        $rootElement.removeClass('up').addClass('down');
-        $route.updateParams({itemId:item.id});
+        ItemNavigation.down(item.id);
     };
+
     $scope.up = function () {
-        $rootElement.removeClass('down').addClass('up');
-        $route.updateParams({itemId:$scope.story.parent});
+        ItemNavigation.up($scope.story.parent);
     };
 }]);

@@ -26,7 +26,7 @@ hnBrowser.config(['$routeProvider', function ($routeProvider) {
 /**
  * Service that deals with loading HN items (stories, comments).
  */
-hnBrowserServices.factory('Items', ['$q', '$firebaseArray', '$firebaseObject', function ($q, $firebaseArray, $firebaseObject) {
+hnBrowserServices.factory('Items', ['$firebaseArray', '$firebaseObject', function ($firebaseArray, $firebaseObject) {
     var service = {},
         url = 'https://hacker-news.firebaseio.com/v0',
         fireRef = new Firebase(url);
@@ -58,14 +58,23 @@ hnBrowserServices.factory('Items', ['$q', '$firebaseArray', '$firebaseObject', f
      * Set recur to a positive integer to only load the given amount
      * of levels.
      */
-    service.loadKids = function (item, recur) {
+    service.loadKids = function (item, recur, allLoaded) {
+        var kidsToLoad = item.kids && item.kids.length || 0;
+
         item.kids_full = _.map(item.kids, function (itemId) {
             var o = $firebaseObject(fireRef.child('item').child(itemId));
-            if (recur) {
-                o.$loaded().then(function(x) {
+
+            o.$loaded().then(function(x) {
+                kidsToLoad -= 1;
+                if (!kidsToLoad && allLoaded) {
+                    allLoaded.resolve();
+                }
+
+                if (recur) {
                     service.loadKids(x, (typeof recur === 'number') ? recur-1 : recur);
-                });
-            }
+                }
+            });
+
             return o;
         });
     };
@@ -76,10 +85,31 @@ hnBrowserServices.factory('Items', ['$q', '$firebaseArray', '$firebaseObject', f
      * recur is apassed to .loadKids to control how many levels of
      * kids to load.
      */
-    service.loadFullItem = function (itemId, recur) {
+    service.loadFullItem = function (itemId, recur, allLoaded) {
         var item = service.loadItem(itemId);
-        item.$loaded().then(function () { service.loadKids(item, recur); });
+        item.$loaded().then(function () { service.loadKids(item, recur, allLoaded); });
         return item;
+    };
+
+    return service;
+}]);
+
+hnBrowserServices.factory('ScrollTo', ['$window', '$interval', function ($window, $interval) {
+    var service = {};
+
+    service.scrollTo = function (elementId) {
+        var el = $window.document.getElementById(elementId);
+
+        if (el) {
+            el.scrollIntoView();
+        } else {
+            $interval(function() {
+                var el = $window.document.getElementById(elementId);
+                if (el) {
+                    el.scrollIntoView();
+                }
+            }, 0, 1);
+        }
     };
 
     return service;
@@ -99,9 +129,9 @@ hnBrowserServices.factory('ItemNavigation', ['$route', '$rootScope', function ($
         $route.updateParams({itemId:itemId});
     };
 
-    service.up = function (itemId) {
+    service.up = function (itemId, activeItem) {
         $rootScope.viewAnimationClass = 'up';
-        $route.updateParams({itemId:itemId});
+        $route.updateParams({itemId:itemId, activeItem:activeItem});
     };
 
     return service;
@@ -115,12 +145,20 @@ hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($
     });
 }]);
 
-hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', 'ItemNavigation', 'Items', function ($scope, $routeParams, ItemNavigation, items) {
+hnBrowserControllers.controller('StoryCtrl', ['$q', '$scope', '$routeParams', 'ItemNavigation', 'Items', 'ScrollTo', function ($q, $scope, $routeParams, ItemNavigation, items, ScrollTo) {
     var url = 'https://hacker-news.firebaseio.com/v0',
-        fireRef = new Firebase(url);
+        fireRef = new Firebase(url),
+        afterLoad = $q.defer();
+
+    afterLoad.promise.then(function() {
+        if ($routeParams.activeItem) {
+            // TODO: keep the correct item offset from the top too?
+            ScrollTo.scrollTo($routeParams.activeItem);
+        }
+    });
 
     // load item and its children
-    $scope.story = items.loadFullItem($routeParams.itemId, 1);
+    $scope.story = items.loadFullItem($routeParams.itemId, 0, afterLoad);
 
     // navigation
     $scope.down = function (item) {
@@ -128,6 +166,6 @@ hnBrowserControllers.controller('StoryCtrl', ['$scope', '$routeParams', 'ItemNav
     };
 
     $scope.up = function () {
-        ItemNavigation.up($scope.story.parent);
+        ItemNavigation.up($scope.story.parent, $scope.story.id);
     };
 }]);

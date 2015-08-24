@@ -32,6 +32,7 @@
       <div class="comment-container" ng-swipe-right="up()">
         <h2> {{ story.title }} </h2>
         <div class="comment"
+             id="{{k.id}}"
              ng-swipe-right="$parent.up()"
              ng-swipe-left="$parent.down(k)"
              ng-repeat="k in story.kids_full">

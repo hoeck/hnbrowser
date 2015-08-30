@@ -52,6 +52,20 @@ body {
     transform:translateX(100%);
 }
 
+@-webkit-keyframes wiggle {
+        0% { transform: translate(0%); }
+        50% { transform: translate(-10%); }
+        100% { transform: translate(0%); width:100%; }
+}
+
+.view-frame.wiggle {
+    -webkit-animation-name: wiggle;
+    -webkit-animation-duration: 200ms;
+    -webkit-transform-origin:50% 50%;
+    -webkit-animation-iteration-count: 1;
+    -webkit-animation-timing-function: ease;
+}
+
 .comment-container {
     position:absolute;
     top:0; right:0; bottom:0; left:0;

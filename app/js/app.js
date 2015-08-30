@@ -10,13 +10,13 @@ hnBrowser.config(['$routeProvider', function ($routeProvider) {
                 template: function() {
                     return document.getElementById('StoryListTmpl').innerText;
                 },
-                controller: 'StoryListCtrl',
+                controller: 'StoryListCtrl'
             })
             .when('/stories/:itemId', {
                 template: function() {
                     return document.getElementById('StoryTmpl').innerText;
                 },
-                controller: 'StoryCtrl',
+                controller: 'StoryCtrl'
             })
             .otherwise({
                 redirectTo: '/stories'
@@ -121,7 +121,7 @@ hnBrowserServices.factory('ScrollTo', ['$window', '$interval', function ($window
  * Set the appropriate URL and the viewAnimationClass on the
  * rootScope to control the direction of the swipe animation.
  */
-hnBrowserServices.factory('ItemNavigation', ['$route', '$rootScope', function ($route, $rootScope) {
+hnBrowserServices.factory('ItemNavigation', ['$route', '$rootScope', '$animate', function ($route, $rootScope, $animate) {
     var service = {};
 
     service.down = function (itemId) {
@@ -132,6 +132,14 @@ hnBrowserServices.factory('ItemNavigation', ['$route', '$rootScope', function ($
     service.up = function (itemId, activeItem) {
         $rootScope.viewAnimationClass = 'up';
         $route.updateParams({itemId:itemId, activeItem:activeItem});
+    };
+
+    service.cantGoDown = function () {
+        // cheat; TODO: create an animated-view directive!
+        var el = document.querySelector('.view-frame');
+        $animate.addClass(el, 'wiggle').done(function () {
+            $animate.removeClass(el, 'wiggle');
+        });
     };
 
     return service;
@@ -162,7 +170,11 @@ hnBrowserControllers.controller('StoryCtrl', ['$q', '$scope', '$routeParams', 'I
 
     // navigation
     $scope.down = function (item) {
-        ItemNavigation.down(item.id);
+        if (!(item.kids && item.kids.length)) {
+            ItemNavigation.cantGoDown();
+        } else {
+            ItemNavigation.down(item.id);
+        }
     };
 
     $scope.up = function () {

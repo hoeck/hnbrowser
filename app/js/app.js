@@ -1,8 +1,9 @@
 'use strict';
 
-var hnBrowser = angular.module('hnBrowser', ['hnBrowserServices', 'hnBrowserControllers', 'ngRoute', 'ngSanitize', 'ngTouch', 'ngAnimate']),
+var hnBrowser = angular.module('hnBrowser', ['hnBrowserServices', 'hnBrowserControllers', 'hnBrowserDirectives', 'ngRoute', 'ngSanitize', 'ngTouch', 'ngAnimate']),
     hnBrowserControllers = angular.module('hnBrowserControllers', []),
-    hnBrowserServices = angular.module('hnBrowserServices', ['firebase']);
+    hnBrowserServices = angular.module('hnBrowserServices', ['firebase']),
+    hnBrowserDirectives = angular.module('hnBrowserDirectives', []);
 
 hnBrowser.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
@@ -118,31 +119,63 @@ hnBrowserServices.factory('ScrollTo', ['$window', '$interval', function ($window
 /**
  * Service that takes care of comment navigation details.
  *
- * Set the appropriate URL and the viewAnimationClass on the
- * rootScope to control the direction of the swipe animation.
+ * Set the appropriate URL and control the animations (slide
+ * left/right/bounce) on the element with the viewAnimation directive.
  */
-hnBrowserServices.factory('ItemNavigation', ['$route', '$rootScope', '$animate', function ($route, $rootScope, $animate) {
-    var service = {};
+hnBrowserServices.factory('ItemNavigation', ['$route', '$animate', function ($route, $animate) {
+    var service = {},
+        viewAnimation;
+
+    service.registerViewAnimation = function (v) {
+        viewAnimation = v;
+    };
 
     service.down = function (itemId) {
-        $rootScope.viewAnimationClass = 'down';
+        viewAnimation.setAnimationClass('down');
         $route.updateParams({itemId:itemId});
     };
 
     service.up = function (itemId, activeItem) {
-        $rootScope.viewAnimationClass = 'up';
+        viewAnimation.setAnimationClass('up');
         $route.updateParams({itemId:itemId, activeItem:activeItem});
     };
 
     service.cantGoDown = function () {
-        // cheat; TODO: create an animated-view directive!
-        var el = document.querySelector('.view-frame');
-        $animate.addClass(el, 'wiggle').done(function () {
-            $animate.removeClass(el, 'wiggle');
-        });
+        viewAnimation.toggleAnimationClass('bounce');
     };
 
     return service;
+}]);
+
+/**
+ * Directive to control animation CSS classes on a toplevel element
+ *
+ * Wired to the ItemNavigation Service, should ony be used once within the
+ * app.
+ */
+hnBrowserDirectives.directive('animateView', ['$animate', '$timeout', 'ItemNavigation', function ($animate, $timeout, ItemNavigation) {
+    return {
+        restrict: 'A',
+        link: function link(scope, element, attrs) {
+            var lastClassname = '';
+
+            ItemNavigation.registerViewAnimation({
+                setAnimationClass: function (classname) {
+                    $animate.setClass(element, classname, lastClassname);
+                    lastClassname = classname;
+                },
+                toggleAnimationClass: function (classname) {
+                    $animate.addClass(element, classname).then(function () {
+                        // :( does not work without timout altough .done
+                        // should only fire when the animation is over :(
+                        $timeout(function () {
+                            element.removeClass(classname);
+                        }, 250);
+                    });
+                }
+            });
+        }
+    };
 }]);
 
 hnBrowserControllers.controller('StoryListCtrl', ['$scope', 'Items', function ($scope, items) {

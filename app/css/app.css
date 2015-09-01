@@ -58,7 +58,7 @@ body {
         100% { transform: translate(0%); width:100%; }
 }
 
-.view-frame.wiggle {
+.bounce .view-frame {
     -webkit-animation-name: wiggle;
     -webkit-animation-duration: 200ms;
     -webkit-transform-origin:50% 50%;

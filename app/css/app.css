@@ -71,34 +71,30 @@ body {
     top:0; right:0; bottom:0; left:0;
 }
 
-.comment pre {
-    overflow:auto;
-    font-size: large;
-}
-
 .comment {
     white-space:normal;
     vertical-align:top;
-    margin:1ex;
+    margin:3em 1ex;
 }
 
-.comment .header,
-.comment .footer {
-    margin: 1ex 0;
+.comment pre {
+    overflow:auto;
+    /* font-size: large; */
 }
 
-.comment .footer {
-    text-align: right;
+.comment p {
+    margin-bottom: 0;
+    margin-top: 1em;
 }
 
-/* debug */
-
-.comment {
-    border: 1px solid #999;
-    padding: 1ex;
-    margin: 0.25ex;
+.comment .comment-footer {
+    font-size: small;
+    font-style: italic;
+    margin: .5ex 0;
+    padding-left: 1em;
+    color: #666;
 }
 
-.view-frame {
-    overflow-y: scroll;
+.comment .comment-footer .comment-footer-right {
+    float: right;
 }

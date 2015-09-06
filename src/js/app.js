@@ -191,6 +191,12 @@ hnBrowserControllers.controller('StoryCtrl', ['$q', '$scope', '$routeParams', 'I
         fireRef = new Firebase(url),
         afterLoad = $q.defer();
 
+    // TODO: path
+    // - remember and display the current path to the item so the user can
+    //   easier follow conversations
+    // - must be loaded when it does not exists
+    // - should otherwise be computed when going down or going up
+
     afterLoad.promise.then(function() {
         if ($routeParams.activeItem) {
             // TODO: keep the correct item offset from the top too?

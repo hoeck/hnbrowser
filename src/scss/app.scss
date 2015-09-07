@@ -3,9 +3,6 @@ html {
     font-family: Verdana,Geneva,sans-serif;
 }
 
-
-/* TODO: SASS */
-
 body {
     overflow-x:hidden;
 }
@@ -13,87 +10,90 @@ body {
 .view-frame {
     position: absolute;
     top:0; right:0; bottom:0; left:0;
-}
 
-.down .view-frame.ng-enter {
-    transform:translateX(100%);
-    transition: .2s ease-out all;
-}
+    .down & {
+        &.ng-enter {
+            transform:translateX(100%);
+            transition: .2s ease-out all;
 
-.down .view-frame.ng-enter.ng-enter-active {
-    transform:translateX(0%);
-}
+            &.ng-enter-active {
+                transform:translateX(0%);
+            }
+        }
 
-.down .view-frame.ng-leave {
-    transform:translateX(0%);
-    transition: .2s ease-out all;
-}
+        &.ng-leave {
+            transform:translateX(0%);
+            transition: .2s ease-out all;
 
-.down .view-frame.ng-leave.ng-leave-active {
-    transform:translateX(-100%);
-}
+            &.ng-leave-active {
+                transform:translateX(-100%);
+            }
+        }
+    }
 
+    .up &  {
+        &.ng-enter {
+            transform:translateX(-100%);
+            transition: .2s ease-out all;
 
-.up .view-frame.ng-enter {
-    transform:translateX(-100%);
-    transition: .2s ease-out all;
-}
+            &.ng-enter-active {
+                transform:translateX(0%);
+            }
+        }
 
-.up .view-frame.ng-enter.ng-enter-active {
-    transform:translateX(0%);
-}
+        &.ng-leave {
+            transform:translateX(0%);
+            transition: .2s ease-out all;
 
-.up .view-frame.ng-leave {
-    transform:translateX(0%);
-    transition: .2s ease-out all;
-}
+            &.ng-leave-active {
+                transform:translateX(100%);
+            }
+        }
+    }
 
-.up .view-frame.ng-leave.ng-leave-active {
-    transform:translateX(100%);
-}
-
-@-webkit-keyframes wiggle {
+    @-webkit-keyframes bounce {
         0% { transform: translate(0%); }
         50% { transform: translate(-10%); }
         100% { transform: translate(0%); width:100%; }
-}
+    }
 
-.bounce .view-frame {
-    -webkit-animation-name: wiggle;
-    -webkit-animation-duration: 200ms;
-    -webkit-transform-origin:50% 50%;
-    -webkit-animation-iteration-count: 1;
-    -webkit-animation-timing-function: ease;
+    .bounce & {
+        -webkit-animation-name: bounce;
+        -webkit-animation-duration: 200ms;
+        -webkit-transform-origin: 50% 50%;
+        -webkit-animation-iteration-count: 1;
+        -webkit-animation-timing-function: ease;
+    }
 }
 
 .comment-container {
     position:absolute;
     top:0; right:0; bottom:0; left:0;
-}
 
-.comment {
-    white-space:normal;
-    vertical-align:top;
-    margin:3em 1ex;
-}
+    .comment {
+        white-space:normal;
+        vertical-align:top;
+        margin:3em 1ex;
 
-.comment pre {
-    overflow:auto;
-}
+         pre {
+             overflow:auto;
+         }
 
-.comment p {
-    margin-bottom: 0;
-    margin-top: 1em;
-}
+         p {
+             margin-bottom: 0;
+             margin-top: 1em;
+         }
 
-.comment .comment-footer {
-    font-size: small;
-    font-style: italic;
-    margin: .5ex 0;
-    padding-left: 1em;
-    color: #666;
-}
+         .comment-footer {
+             font-size: small;
+             font-style: italic;
+             margin: .5ex 0;
+             padding-left: 1em;
+             color: #666;
 
-.comment .comment-footer .comment-footer-right {
-    float: right;
+             .comment-footer-right {
+                 float: right;
+             }
+         }
+    }
 }

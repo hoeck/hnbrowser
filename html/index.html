@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>hnbrowser</title>
+    </head>
+    <style>
+        html {
+            background-color: #f6f6ef;
+            font-family: Verdana, Geneva, sans-serif;
+        }
+
+        body {
+            margin: 0;
+        }
+
+        a {
+            text-decoration: inherit;
+            color: inherit;
+        }
+
+        .comment {
+            margin: 35px 10px;
+        }
+
+        .comment:first-child {
+            margin-top: 15px;
+        }
+
+        .comment p {
+            margin: 8px 0 0 0;
+        }
+
+        .comment a {
+            display: inline-block;
+            max-width: 95%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            text-decoration: underline;
+            vertical-align: top;
+        }
+
+        .comment a:visited {
+            color: #828282;
+            text-decoration: none;
+        }
+
+        .comment .item {
+            margin-top: 4px;
+            font-size: smaller;
+            font-style: italic;
+            text-align: right;
+        }
+    </style>
+    <body>
+        <div id="app"></div>
+        <script type="text/javascript" src="js/swipe.js"></script>
+        <script type="text/javascript" src="main.js"></script>
+    </body>
+</html>

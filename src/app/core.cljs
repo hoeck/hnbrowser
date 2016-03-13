@@ -211,9 +211,18 @@
   ;; continous-mode, it will create 2 additional slides
   ;; by cloning child 1 and 2 - not sure how react
   ;; reacts to this
-  (let [container-styles {:overflow "hidden" :visibility "hidden" :position "relative"}
-        wrapper-styles {:overflow "hidden" :position "relative"}
-        child-styles {:float "left" :width "100%" :position "relative" :transitionProperty "transform"}
+  (let [container-styles {;; swipe-styles
+                          :overflow "hidden" :visibility "hidden" :position "relative"
+                          ;; enable vertical scrolling of individual slides
+                          :height "100%"}
+        wrapper-styles {;; swipe styles
+                        :overflow "hidden" :position "relative"
+                        ;; enable vertical scrolling of individual slides
+                        :height "100%"}
+        child-styles {;; swipe styles
+                      :float "left" :width "100%" :position "relative" :transitionProperty "transform"
+                      ;; enable vertical scrolling of individual slides
+                      :height "100%" :overflow-y "scroll"}
         swipe-object (atom nil)
         current-index (atom nil)]
     (reagent/create-class
@@ -261,7 +270,8 @@
         comment-nesting-limit 16
         route (subscribe [:route])]
     (fn []
-      [:div
+      [:div {:style {;; enable vertical scrolling of individual slides
+                     :position "absolute" :top 0 :bottom 0 :left 0 :right 0 :overflow-y "scroll"}}
        [swipe (apply conj []
                      story-list
                      (map (fn [i] [comment-list i]) (range comment-nesting-limit)))]])))

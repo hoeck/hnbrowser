@@ -48,16 +48,8 @@
                 :next-item-id nil}
 
    ;; raw firebase data
-   :topstories [10958186]
-   :items {10958186 {"kids" [10958457 10958347 10958334],
-                     "score" 34,
-                     "url" "http://include-what-you-use.org/",
-                     "by" "ingve",
-                     "descendants" 4,
-                     "id" 10958186,
-                     "time" 1453552880,
-                     "title" "Include-what-you-use: clang tool to analyze #includes in C and C++ source files",
-                     "type" "story"}}})
+   :topstories []
+   :items {}})
 
 ;; set the initial state: (submit [:initialize])
 (register-handler
@@ -118,7 +110,7 @@
     ;; static subscription: item-id is a plain number
     (reaction (-> @db :items (get item-id))))
    ([db _ [item-id]]
-    ;; dynamic subscription: third param item-id is a ratom
+    ;; dynamic subscription: third param item-id is a (resolved) ratom
     (assert (= 1 (count _)))
     (reaction (-> @db :items (get item-id))))))
 
@@ -156,9 +148,17 @@
 
 ;; components
 
+(defn spinner
+  "A loading animation with a label."
+  [label]
+  [:div
+   [:div.spinner [:div.bounce1] [:div.bounce2] [:div.bounce3]]
+   [:div {:style {:text-align "center" :color "#888" :margin-top 10}}
+    label]])
+
 (defn story-item [story]
   (if (not story)
-    [:div "*loading*"]
+    [:div]
     ;; :a {:href (story "url")}
     [:div.story {:style {:display "flex"
                          :justify-content "space-between"
@@ -174,15 +174,17 @@
   (let [stories (subscribe [:topstories])
         items (subscribe [:items])]
     [:div
-     (doall (for [story-id @stories]
-              [:div {:key story-id}
-              [story-item (get @items story-id)]]))]))
+     (if (seq @stories)
+       (doall (for [story-id @stories]
+                [:div {:key story-id}
+                 [story-item (get @items story-id)]]))
+       [spinner "loading stories"])]))
 
 (defn comment-list-item [item-id]
   (let [item (subscribe [:item item-id])]
     (fn []
       [:div.comment {:data-item-id (if (get @item "kids") (get @item "id") "")}
-       [:div {:dangerouslySetInnerHTML {:__html (get @item "text")}}]
+       [:div.content {:dangerouslySetInnerHTML {:__html (get @item "text")}}]
        [:div.item
         (let [username (get @item "by")
               number-of-replies (count (get @item "kids"))
@@ -197,13 +199,16 @@
   [path-index]
   (let [item-id (subscribe [:navigation-item-path path-index])
         ;; dynamic subscription
-        item (subscribe [:item] [item-id])]
+        ;; item (subscribe [:item] [item-id])
+        items (subscribe [:items])
+        kid-ids (reaction (-> @items (get @item-id) (get "kids")))
+        items-loaded (reaction (every? #(seq (get @items %)) @kid-ids))]
     (fn [path-index]
-      (if (not item-id)
-        [:div "*loading*"]
-        [:div
-         (for [k-id (get @item "kids")]
-           ^{:key k-id} [comment-list-item k-id])]))))
+      [:div
+       (if @items-loaded
+         (for [k-id @kid-ids]
+           ^{:key k-id} [comment-list-item k-id])
+         [spinner "loading comments"])])))
 
 (defn swipe [children slide-change-callback]
   "Container component that uses Swipe.js to navigate between children."

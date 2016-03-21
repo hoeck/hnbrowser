@@ -51,6 +51,10 @@
    :topstories []
    :items {}})
 
+;; state that (for perf reasons) does not belong into app-db
+(def animation-state
+  {:percent-swiped (atom 0)})
+
 ;; set the initial state: (submit [:initialize])
 (register-handler
  :initialize
@@ -115,6 +119,11 @@
     (reaction (-> @db :items (get item-id))))))
 
 (register-sub
+ :navigation
+ (fn [db [_ path-index]]
+   (reaction (get @db :navigation))))
+
+(register-sub
  :navigation-item-path
  (fn [db [_ path-index]]
    (reaction (-> @db :navigation :item-path (nth path-index nil)))))
@@ -157,28 +166,54 @@
     label]])
 
 (defn story-item [story]
-  (if (not story)
-    [:div]
-    ;; :a {:href (story "url")}
-    [:div.story {:style {:display "flex"
-                         :justify-content "space-between"
-                         :align-items "baseline"
-                         :margin "32px 10px"}
-                 :data-item-id (story "id")}
-     [:div {:style {:flex "0 1 auto" :width "100%"}}
-      (story "title")]
-     [:div {:style {:flex "5ex" :text-align "right"}}
-      [:span (story "descendants")]]]))
+  (let [;; highlight (with transition) the currently selected/touched story
+        nav (subscribe [:navigation])
+        bg-alpha (reaction (let [percent-swiped-raw (or @(:percent-swiped animation-state) 0)
+                                 negative? (< percent-swiped-raw 0)
+                                 positive? (< 0 percent-swiped-raw)
+                                 percent-swiped-clean (max 0 (min 1 (Math/abs percent-swiped-raw)))]
+                             (cond negative? percent-swiped-clean
+                                   positive? (- 1 percent-swiped-clean)
+                                   :else 0)))]
+    (fn [story]
+      (let [story-id (get story "id")
+            ;; TODO: ensure selected is only true if story-item is actually
+            ;; visible to reduce redundant renderings
+            selected? (condp = (-> @nav :item-path count)
+                        0 (-> @nav :next-item-id (= story-id))
+                        1 (-> @nav :item-path first (= story-id))
+                        false)
+            animate? (and selected? (or (= @bg-alpha 0) (= @bg-alpha 1)))]
+        (if (not story)
+          [:div]
+          ;; :a {:href (story "url")}
+          [:div.story {:style {:display "flex"
+                               :justify-content "space-between"
+                               :align-items "baseline"
+                               :padding "16px 10px"
+                               ;; swipe highlight
+                               :background-color (if selected?
+                                                   (format/format "rgba(150,150,150,%s)" @bg-alpha)
+                                                   "inherit")
+                               :transition-duration (if animate? "300ms" "0") ;; default duration of swipe.js (options.speed)
+                               :transition-property (if animate? "background-color" "")}
+                       :class (if selected? (str "selected") (str "not-selected"))
+                       :data-item-id (story "id")}
+           [:div {:style {:flex "0 1 auto" :width "100%"}}
+            (story "title")]
+           [:div {:style {:flex "5ex" :text-align "right"}}
+            [:span (story "descendants")]]])))))
 
 (defn story-list []
   (let [stories (subscribe [:topstories])
         items (subscribe [:items])]
-    [:div
-     (if (seq @stories)
-       (doall (for [story-id @stories]
-                [:div {:key story-id}
-                 [story-item (get @items story-id)]]))
-       [spinner "loading stories"])]))
+    (fn []
+      [:div.story-list
+       (if (and (seq @stories) (every? #(seq (get @items %)) @stories))
+         (doall (for [story-id @stories]
+                  [:div {:key story-id}
+                   [story-item (get @items story-id)]]))
+         [spinner "loading stories"])])))
 
 (defn comment-list-item [item-id]
   (let [item (subscribe [:item item-id])]
@@ -203,7 +238,7 @@
         items (subscribe [:items])
         kid-ids (reaction (-> @items (get @item-id) (get "kids")))
         items-loaded (reaction (every? #(seq (get @items %)) @kid-ids))]
-    (fn [path-index]
+    (fn []
       [:div
        (if @items-loaded
          (for [k-id @kid-ids]
@@ -237,21 +272,33 @@
         ;; see https://github.com/lyfeyaj/swipe#config-options
         (reset! swipe-object (js/Swipe (reagent/dom-node this)
                                        (clj->js {:continuous false
-                                                 :callback (fn [index]
-                                                             (if (< index @current-index)
-                                                               ;; slide left
-                                                               (dispatch [:navigation-up])
-                                                               ;; slide right
-                                                               (dispatch [:navigation-down]))
-                                                             (reset! current-index index))
-                                                 :startSlidingCallback (fn [slide-element]
-                                                                         (let [item-id (not-empty (find-element-item-id slide-element))]
-                                                                           (when item-id
-                                                                             (dispatch [:navigation-set-next-item-id (js/parseInt item-id)])
-                                                                             ;; load the item
-                                                                             (load-item-and-kids item-id))
-                                                                           (clj->js {:allowSlidingLeft true
-                                                                                     :allowSlidingRight (boolean item-id)})))}))))
+                                                 :slideStopCallback (fn [slide-index-chanded? index]
+                                                                      (reset! (:percent-swiped animation-state)
+                                                                              (if slide-index-chanded?
+                                                                                (if (< 0 @(:percent-swiped animation-state))
+                                                                                  -1
+                                                                                  1)
+                                                                                0))
+                                                                      (cond
+                                                                        (< index @current-index)
+                                                                        ;; slide left
+                                                                        (dispatch [:navigation-up])
+                                                                        (< @current-index index)
+                                                                        ;; slide right
+                                                                        (dispatch [:navigation-down]))
+                                                                      (reset! current-index index))
+                                                 :slideMoveCallbackDivider 10
+                                                 :slideMoveCallback (fn [percent-swiped resistance-applied?]
+                                                                      (reset! (:percent-swiped animation-state) percent-swiped))
+                                                 :slideStartCallback (fn [slide-element]
+                                                                       (reset! (:percent-swiped animation-state) 0)
+                                                                       (let [item-id (not-empty (find-element-item-id slide-element))]
+                                                                         (when item-id
+                                                                           (dispatch [:navigation-set-next-item-id (js/parseInt item-id)])
+                                                                           ;; ;; load the item
+                                                                           (load-item-and-kids item-id))
+                                                                         (clj->js {:allowSlidingLeft true
+                                                                                   :allowSlidingRight (boolean item-id)})))}))))
       :component-will-unmount (fn []
                                 (.kill @swipe-object)
                                 (reset! swipe-object nil))
@@ -298,7 +345,9 @@
   (setup-history)
   (reagent/render [root-view] root-element))
 
+(defonce initialized (atom false))
 (defn main []
-  (let [app-element (.getElementById js/document "app")]
-    (when (-> app-element .-children .-length (= 0))
+  (when-not @initialized
+    (let [app-element (.getElementById js/document "app")]
+      (reset! initialized true)
       (run app-element))))

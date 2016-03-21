@@ -55,7 +55,7 @@
 
     // quit if no root element
     if (!container) {
-      return;
+        throw new Error('container element cannot be null');
     }
 
     var element = container.children[0];
@@ -314,8 +314,9 @@
     var start = {};
     var delta = {};
     var isScrolling;
-    var isSlidingLeftAllowed = true; // modified by startSlidingCallback
+    var isSlidingLeftAllowed = true; // modified by slideStartCallback
     var isSlidingRightAllowed = true;
+    var moveEventCounter = 0;
 
     // setup event capturing
     var events = {
@@ -363,8 +364,11 @@
           time: +new Date()
         };
 
+        // only invoke the slideMoveCallback every N move events, therefore count move events
+        moveEventCounter = 0;
+
         // the callback may decide whether scrolling to the left or right is allowed
-        callbackResponse = (options.startSlidingCallback || noop)(touches.target);
+        callbackResponse = (options.slideStartCallback || noop)(touches.target);
         isSlidingLeftAllowed = (callbackResponse || {allowSlidingLeft: true}).allowSlidingLeft;
         isSlidingRightAllowed = (callbackResponse || {allowSlidingRight: true}).allowSlidingRight;
 
@@ -386,6 +390,7 @@
 
       },
       move: function(event) {
+        var applyResistance;
         var touches;
 
         if (isMouseEvent(event)) {
@@ -440,7 +445,7 @@
             var isFirstSlide = !index;
             var isLastSlide = index === (slides.length - 1);
 
-            var applyResistance =
+            applyResistance =
                   (isSlidingLeft && (isFirstSlide || !isSlidingLeftAllowed)) ||
                   (isSlidingRight && (isLastSlide || !isSlidingRightAllowed));
 
@@ -452,6 +457,18 @@
             translate(index-1, delta.x + slidePos[index-1], 0);
             translate(index, delta.x + slidePos[index], 0);
             translate(index+1, delta.x + slidePos[index+1], 0);
+          }
+
+          // sliding callback - use to apply extra transformations while sliding
+          moveEventCounter++;
+
+          // for perf. reasons, invoke the callback only every nth move event
+          // (options.slideMoveCallbackDivider) but always on the first and
+          // second event
+          if (options.slideMoveCallback &&
+              (((moveEventCounter % (options.slideMoveCallbackDivider || 1)) === 0)
+               || (moveEventCounter === 1))) {
+            options.slideMoveCallback(delta.x / width, applyResistance);
           }
 
         }
@@ -472,6 +489,9 @@
         var isPastBounds =
               !index && delta.x > 0 ||                      // if first slide and slide amt is greater than 0
               index === slides.length - 1 && delta.x < 0;   // or if last slide and slide amt is less than 0
+
+        // slide index changed, passed to slideStopCallback
+        var hasSlideChanged = false;
 
         if (options.continuous) {
           isPastBounds = false;
@@ -521,9 +541,7 @@
 
             }
 
-            if (options.callback) {
-              options.callback(getPos(), slides[index]);
-            }
+            hasSlideChanged = true;
 
           } else {
 
@@ -552,6 +570,18 @@
         } else {
           element.removeEventListener('touchmove', events, false);
           element.removeEventListener('touchend', events, false);
+        }
+
+        if (options.slideMoveCallback) {
+          options.slideMoveCallback(delta.x, false);
+        }
+
+        if (options.slideStopCallback) {
+          options.slideStopCallback(hasSlideChanged, getPos());
+        }
+
+        if (options.callback && hasSlideChanged) {
+          options.callback(getPos(), slides[index]);
         }
 
       },

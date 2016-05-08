@@ -167,14 +167,7 @@
 
 (defn story-item [story]
   (let [;; highlight (with transition) the currently selected/touched story
-        nav (subscribe [:navigation])
-        bg-alpha (reaction (let [percent-swiped-raw (or @(:percent-swiped animation-state) 0)
-                                 negative? (< percent-swiped-raw 0)
-                                 positive? (< 0 percent-swiped-raw)
-                                 percent-swiped-clean (max 0 (min 1 (Math/abs percent-swiped-raw)))]
-                             (cond negative? percent-swiped-clean
-                                   positive? (- 1 percent-swiped-clean)
-                                   :else 0)))]
+        nav (subscribe [:navigation])]
     (fn [story]
       (let [story-id (get story "id")
             ;; TODO: ensure selected is only true if story-item is actually
@@ -182,24 +175,18 @@
             selected? (condp = (-> @nav :item-path count)
                         0 (-> @nav :next-item-id (= story-id))
                         1 (-> @nav :item-path first (= story-id))
-                        false)
-            animate? (and selected? (or (= @bg-alpha 0) (= @bg-alpha 1)))]
+                        false)]
         (if (not story)
           [:div]
           ;; :a {:href (story "url")}
           [:div.story {:style {:display "flex"
                                :justify-content "space-between"
                                :align-items "baseline"
-                               :padding "16px 10px"
-                               ;; swipe highlight
-                               :background-color (if selected?
-                                                   (format/format "rgba(150,150,150,%s)" @bg-alpha)
-                                                   "inherit")
-                               :transition-duration (if animate? "300ms" "0") ;; default duration of swipe.js (options.speed)
-                               :transition-property (if animate? "background-color" "")}
+                               :padding "16px 10px"}
                        :class (if selected? (str "selected") (str "not-selected"))
                        :data-item-id (story "id")}
-           [:div {:style {:flex "0 1 auto" :width "100%"}}
+           [:a {:style {:flex "0 1 auto" :width "100%"}
+                :href "/"}
             (story "title")]
            [:div {:style {:flex "5ex" :text-align "right"}}
             [:span (story "descendants")]]])))))
@@ -273,12 +260,6 @@
         (reset! swipe-object (js/Swipe (reagent/dom-node this)
                                        (clj->js {:continuous false
                                                  :slideStopCallback (fn [slide-index-chanded? index]
-                                                                      (reset! (:percent-swiped animation-state)
-                                                                              (if slide-index-chanded?
-                                                                                (if (< 0 @(:percent-swiped animation-state))
-                                                                                  -1
-                                                                                  1)
-                                                                                0))
                                                                       (cond
                                                                         (< index @current-index)
                                                                         ;; slide left
@@ -287,9 +268,6 @@
                                                                         ;; slide right
                                                                         (dispatch [:navigation-down]))
                                                                       (reset! current-index index))
-                                                 :slideMoveCallbackDivider 10
-                                                 :slideMoveCallback (fn [percent-swiped resistance-applied?]
-                                                                      (reset! (:percent-swiped animation-state) percent-swiped))
                                                  :slideStartCallback (fn [slide-element]
                                                                        (reset! (:percent-swiped animation-state) 0)
                                                                        (let [item-id (not-empty (find-element-item-id slide-element))]

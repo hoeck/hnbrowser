@@ -323,7 +323,7 @@
         route (subscribe [:route])]
     (fn []
       [:div {:style {;; enable vertical scrolling of individual slides
-                     :position "absolute" :top 0 :bottom 0 :left 0 :right 0 :overflow-y "scroll"}}
+                     :position "absolute" :top 0 :bottom 0 :left 0 :right 0}}
        [swipe (apply conj []
                      story-list
                      (map (fn [i] [comment-list i]) (range comment-nesting-limit)))]])))

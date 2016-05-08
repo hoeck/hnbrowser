@@ -7,9 +7,10 @@
     [adzerk/boot-reload          "0.4.2"           :scope "test"]
     [pandeiro/boot-http          "0.6.3"           :scope "test"]
     [crisptrutski/boot-cljs-test "0.1.0-SNAPSHOT"  :scope "test"]
-    [com.cemerick/piggieback      "0.2.1"          :scope "test"]
-    [weasel                       "0.7.0"          :scope "test"]
-    [org.clojure/tools.nrepl      "0.2.12"         :scope "test"]
+    [com.cemerick/piggieback     "0.2.1"           :scope "test"]
+    [weasel                      "0.7.0"           :scope "test" :exclusions [http-kit]]
+    [com.taoensso.forks/http-kit "2.1.20"] ;; https://github.com/bhauman/lein-figwheel/issues/194 && https://github.com/bhauman/lein-figwheel/issues/194
+    [org.clojure/tools.nrepl     "0.2.12"          :scope "test"]
     [org.clojure/clojure         "1.7.0"]
     [org.clojure/clojurescript   "1.7.170"]
     [reagent                     "0.6.0-alpha"]
@@ -17,11 +18,7 @@
     [secretary                   "1.2.3"]
     [bidi                        "1.25.0"]
     [prismatic/schema            "1.0.3"]
-    [cljsjs/firebase            "2.1.2-1"]
-    ;; TODO: create a cljsjs package
-    ;;       https://github.com/cljsjs/packages/wiki/Creating-Packages
-    ;;[cljsjs/swipe               "2.0.0"]
-    ])
+    [cljsjs/firebase             "2.1.2-1"]])
 
 (require
  '[adzerk.boot-cljs      :refer [cljs]]

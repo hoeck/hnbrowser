@@ -56,7 +56,8 @@
         (reload :on-jsload 'app.core/main)
         (cider)
         (cljs-repl)
-        (cljs :source-map true :optimizations :none)))
+        (cljs :source-map true :optimizations :none)
+        (target :dir #{"target"})))
 
 (deftask build []
   (set-env! :source-paths #{"src"})

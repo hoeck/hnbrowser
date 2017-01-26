@@ -1,4 +1,9 @@
-out/*
-target/*
-.nrepl-history
 .nrepl-port
+.tern-port
+npm-debug.log
+project.clj
+.cljsbuild
+node_modules
+build
+figwheel_server.log
+.repl-*

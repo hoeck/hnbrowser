@@ -1,0 +1,55 @@
+{
+  "name": "hnbrowser",
+  "version": "1.0.0",
+  "description": "A mobile-friendly Hackernews comment browser.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "clean": "rm -rf build",
+    "http-server": "http-server -c-1 --silent build",
+    "html-watch": "cpx html/index.html build --watch",
+    "nrepl": "npm run clean && concurrently -kr 'npm run http-server' 'npm run html-watch' 'cljsbuild nrepl --figwheel'",
+    "repl": "npm run clean && concurrently -kr 'npm run http-server' 'npm run html-watch' 'cljsbuild repl --figwheel'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hoeck/hnbrowser.git"
+  },
+  "author": "Erik Soehnel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hoeck/hnbrowser/issues"
+  },
+  "homepage": "https://github.com/hoeck/hnbrowser#readme",
+  "devDependencies": {
+    "cljsbuild": "0.0.5",
+    "concurrently": "^3.1.0",
+    "cpx": "^1.5.0",
+    "http-server": "^0.9.0"
+  },
+  "dependencies": {
+    "swipe-nav": "0.0.3"
+  },
+  "cljsbuild": {
+    "main": "app.core",
+    "target": "build/js/main.js",
+    "assetPath": "js",
+    "dependencies": {
+      "org.clojure/clojure": "1.9.0-alpha14",
+      "org.clojure/clojurescript": "1.9.293",
+      "org.clojure/tools.nrepl": "0.2.12",
+      "com.cemerick/piggieback": "0.2.1",
+      "cider/cider-nrepl": "0.15.0-SNAPSHOT",
+      "refactor-nrepl": "2.3.0-SNAPSHOT",
+      "weasel": "0.7.0",
+      "reagent": "0.6.0",
+      "re-frame": "0.9.1",
+      "secretary": "1.2.3",
+      "bidi": "2.0.16",
+      "cljsjs/firebase": "3.5.3-0",
+      "figwheel-sidecar": "0.5.8"
+    }
+  }
+}

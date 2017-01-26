@@ -3,10 +3,19 @@
             [re-frame.core :refer [dispatch]]
             [cljsjs.firebase]))
 
-(def firebase-url "https://hacker-news.firebaseio.com/v0")
+(defonce firebase-url "https://hacker-news.firebaseio.com/v0")
+
+(defonce firebase-config
+  (clj->js {;; apiKey: "<API_KEY>",
+            ;; authDomain: ".firebaseapp.com",
+            "databaseURL" "https://hacker-news.firebaseio.com",
+            ;; storageBucket: "<BUCKET>.appspot.com",
+            ;; messagingSenderId: "<SENDER_ID>",
+            }))
 
 ;; TODO: use sth. like mount or component to manage state
-(def firebase-ref (js/Firebase. firebase-url))
+(defonce firebase-app (.initializeApp js/firebase firebase-config "APP-NAME"))
+(def firebase-ref (-> firebase-app .database (.ref "/v0")))
 
 (defn query-handler-dispatch
   "Dispatch value depending on the type of handler.

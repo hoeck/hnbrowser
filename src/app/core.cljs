@@ -2,19 +2,31 @@
   (:require-macros [reagent.ratom :refer [reaction]])
   (:require [clojure.string]
             [reagent.core :as reagent :refer [atom]]
-            [re-frame.core :refer [dispatch
-                                   dispatch-sync
-                                   register-handler
-                                   register-sub
-                                   subscribe]]
+            [re-frame.core :as rf]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
             [secretary.core :as secretary]
             [bidi.bidi :as bidi]
             [app.firebase :as firebase]
-            [app.format :as format])
-  (:import goog.History
+            [app.format :as format]
+
+            ;; websocket repl
+            [weasel.repl :as repl]
+
+            ;; browser repl
+            [clojure.browser.repl :as brepl]
+            )
+  (:import goog.history.Html5History
            [goog.String]))
+
+;; (enable-console-print!)
+;; (println "Hello world!")
+
+;; "native" cljs repl
+;; (defonce conn (brepl/connect "http://localhost:9000/repl"))
+
+;; weasel (websocket) cljs repl:
+;; (when-not (repl/alive?) (repl/connect "ws://localhost:9001"))
 
 ;; Quick and dirty history configuration.
 
@@ -28,10 +40,10 @@
 
 (defn setup-history []
   ;; goog history works via '#' hashes
-  (let [h (History.)]
+  (let [h (Html5History.)]
     (goog.events/listen h EventType/NAVIGATE
                         (fn [ev]
-                          (dispatch [:route-path (.-token ev)])))
+                          (rf/dispatch [:route-path (.-token ev)])))
     (.setEnabled h true)))
 
 ;; todo: use datascript!!
@@ -56,20 +68,20 @@
   {:percent-swiped (atom 0)})
 
 ;; set the initial state: (submit [:initialize])
-(register-handler
+(rf/reg-event-db
  :initialize
  (fn
    [db _]
    (merge db initial-state)))
 
 ;; update the provided topstory-ids
-(register-handler
+(rf/reg-event-db
  :topstories
  (fn [db [_ value]]
    (assoc db :topstories value)))
 
 ;; update the provided items
-(register-handler
+(rf/reg-event-db
  :update-items
  (fn [db [_ items]]
    (update db :items into (map (fn [v] [(v "id") v]) items))))
@@ -77,67 +89,67 @@
 ;;; navigation
 
 ;; set the item that would be shown when moving down
-(register-handler
+(rf/reg-event-db
  :navigation-set-next-item-id
  (fn [db [_ item-id]]
    (assoc-in db [:navigation :next-item-id] item-id)))
 
 ;; navigate to the parent item
-(register-handler
+(rf/reg-event-db
  :navigation-up
  (fn [db [_]]
    (update-in db [:navigation :item-path] pop)))
 
 ;; navigate to the next-item-id
-(register-handler
+(rf/reg-event-db
  :navigation-down
  (fn [db _]
    (-> db
        (update-in [:navigation :item-path] conj (-> db :navigation :next-item-id))
        (assoc-in [:navigation :next-item-id] nil))))
 
-(register-handler
+(rf/reg-event-db
  :route-path
  (fn [db [_ value]]
    (assoc db :route-path value)))
 
-(register-sub
+(rf/reg-sub
  :topstories
  (fn
    [db _]
-   (reaction (:topstories @db))))
+   (:topstories db)))
 
-(register-sub
+(rf/reg-sub
  :item
  (fn
    ([db [_ item-id]]
     ;; static subscription: item-id is a plain number
-    (reaction (-> @db :items (get item-id))))
+    (-> db :items (get item-id)))
    ([db _ [item-id]]
     ;; dynamic subscription: third param item-id is a (resolved) ratom
     (assert (= 1 (count _)))
-    (reaction (-> @db :items (get item-id))))))
+    (-> db :items (get item-id)))))
 
-(register-sub
+(rf/reg-sub
  :navigation
  (fn [db [_ path-index]]
-   (reaction (get @db :navigation))))
+   (get db :navigation)))
 
-(register-sub
+(rf/reg-sub
  :navigation-item-path
  (fn [db [_ path-index]]
-   (reaction (-> @db :navigation :item-path (nth path-index nil)))))
+   (-> db :navigation :item-path (nth path-index nil))))
 
-(register-sub
+(rf/reg-sub
  :items
  (fn
    [db _]
-   (reaction (:items @db))))
+   (:items db)))
 
-(register-sub
+(rf/reg-sub
  :route
  (fn [db _]
-   (reaction (or (bidi/match-route routes (:route-path @db)) "nooomatch"))))
+   (or (bidi/match-route routes (:route-path db)) "nooomatch")))
 
 ;; tools
 
@@ -152,7 +164,7 @@
   (firebase/get-items-by-id
    [item-id]
    (fn [items]
-     (dispatch [:update-items items])
+     (rf/dispatch [:update-items items])
      (firebase/get-items-by-id (-> items first (get "kids")) :update-items))))
 
 ;; components
@@ -167,7 +179,7 @@
 
 (defn story-item [story]
   (let [;; highlight (with transition) the currently selected/touched story
-        nav (subscribe [:navigation])]
+        nav (rf/subscribe [:navigation])]
     (fn [story]
       (let [story-id (get story "id")
             ;; TODO: ensure selected is only true if story-item is actually
@@ -192,8 +204,8 @@
             [:span (story "descendants")]]])))))
 
 (defn story-list []
-  (let [stories (subscribe [:topstories])
-        items (subscribe [:items])]
+  (let [stories (rf/subscribe [:topstories])
+        items (rf/subscribe [:items])]
     (fn []
       [:div.story-list
        (if (and (seq @stories) (every? #(seq (get @items %)) @stories))
@@ -203,7 +215,7 @@
          [spinner "loading stories"])])))
 
 (defn comment-list-item [item-id]
-  (let [item (subscribe [:item item-id])]
+  (let [item (rf/subscribe [:item item-id])]
     (fn []
       [:div.comment {:data-item-id (if (get @item "kids") (get @item "id") "")}
        [:div.content {:dangerouslySetInnerHTML {:__html (get @item "text")}}]
@@ -219,10 +231,10 @@
 (defn comment-list
   "Render the given comments kids in a list."
   [path-index]
-  (let [item-id (subscribe [:navigation-item-path path-index])
+  (let [item-id (rf/subscribe [:navigation-item-path path-index])
         ;; dynamic subscription
-        ;; item (subscribe [:item] [item-id])
-        items (subscribe [:items])
+        ;; item (rf/subscribe [:item] [item-id])
+        items (rf/subscribe [:items])
         kid-ids (reaction (-> @items (get @item-id) (get "kids")))
         items-loaded (reaction (every? #(seq (get @items %)) @kid-ids))]
     (fn []
@@ -263,16 +275,16 @@
                                                                       (cond
                                                                         (< index @current-index)
                                                                         ;; slide left
-                                                                        (dispatch [:navigation-up])
+                                                                        (rf/dispatch [:navigation-up])
                                                                         (< @current-index index)
                                                                         ;; slide right
-                                                                        (dispatch [:navigation-down]))
+                                                                        (rf/dispatch [:navigation-down]))
                                                                       (reset! current-index index))
                                                  :slideStartCallback (fn [slide-element]
                                                                        (reset! (:percent-swiped animation-state) 0)
                                                                        (let [item-id (not-empty (find-element-item-id slide-element))]
                                                                          (when item-id
-                                                                           (dispatch [:navigation-set-next-item-id (js/parseInt item-id)])
+                                                                           (rf/dispatch [:navigation-set-next-item-id (js/parseInt item-id)])
                                                                            ;; ;; load the item
                                                                            (load-item-and-kids item-id))
                                                                          (clj->js {:allowSlidingLeft true
@@ -298,7 +310,7 @@
   (let [;; nesting is fixed to 16 levels as with swipe.js you cannot dynamically add slides
         ;; TODO: use options.continuous or increase the limit arbitrarly :)
         comment-nesting-limit 16
-        route (subscribe [:route])]
+        route (rf/subscribe [:route])]
     (fn []
       [:div {:style {;; enable vertical scrolling of individual slides
                      :position "absolute" :top 0 :bottom 0 :left 0 :right 0}}
@@ -313,19 +325,22 @@
 
 (defn load-topstories []
   (firebase/get-topstories 25 (fn [topstory-ids]
-                                (dispatch [:topstories topstory-ids])
+                                (rf/dispatch [:topstories topstory-ids])
                                 (firebase/get-items-by-id topstory-ids :update-items))))
 
 (defn ^:export run
   [root-element]
-  (dispatch-sync [:initialize])
+  (rf/dispatch-sync [:initialize])
   (load-topstories)
   (setup-history)
   (reagent/render [root-view] root-element))
 
 (defonce initialized (atom false))
+
 (defn main []
   (when-not @initialized
-    (let [app-element (.getElementById js/document "app")]
+    (let [app-element (.getElementById js/document "app-container")]
       (reset! initialized true)
       (run app-element))))
+
+(main)

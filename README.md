@@ -2,12 +2,15 @@ A [Hacker News](https://news.ycombinator.com) comment browser optimized for touc
 
 [Try It](https://hoeck.github.io/hnbrowser)
 
-Built with [re-frame](https://github.com/Day8/re-frame). Uses the [Boot](http://boot-clj.com/) built tool.
+Built with [re-frame](https://github.com/Day8/re-frame). Uses ~~the [Boot](http://boot-clj.com/)~~ my own [cljsbuild](github.com/hoeck/cljsbuild) build tool.
 
-## develop
+## developing
 
-    boot dev
+    # install js dependencies
+    $ npm install
 
-## build
+    # start an nrepl server
+    $ npm run nrepl
 
-    boot build
+    # connect to it and run (start-repl) to launch the figwheel repl + watcher,
+    # open localhost:8080/build to launch hnbrowser

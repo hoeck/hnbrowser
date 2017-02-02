@@ -15,11 +15,13 @@
 
             ;; browser repl
             [clojure.browser.repl :as brepl]
+
+            [swipe-nav :as swipe-nav]
             )
   (:import goog.history.Html5History
            [goog.String]))
 
-;; (enable-console-print!)
+(enable-console-print!)
 ;; (println "Hello world!")
 
 ;; "native" cljs repl
@@ -63,9 +65,20 @@
    :topstories []
    :items {}})
 
-;; state that (for perf reasons) does not belong into app-db
-(def animation-state
-  {:percent-swiped (atom 0)})
+(rf/reg-fx
+  :load-item-and-kids
+  (fn load-item-and-kids-effect [item-id]
+    (firebase/get-items-by-id
+     [item-id]
+     (fn [items]
+       (rf/dispatch [:update-items items])
+       (firebase/get-items-by-id (-> items first (get "kids")) :update-items)))))
+
+(rf/reg-fx
+ :set-swipe-direction-right
+ (fn []
+
+   ))
 
 ;; set the initial state: (submit [:initialize])
 (rf/reg-event-db
@@ -89,10 +102,11 @@
 ;;; navigation
 
 ;; set the item that would be shown when moving down
-(rf/reg-event-db
+(rf/reg-event-fx
  :navigation-set-next-item-id
- (fn [db [_ item-id]]
-   (assoc-in db [:navigation :next-item-id] item-id)))
+ (fn [{:keys [db]} [_ item-id]]
+   {:db (assoc-in db [:navigation :next-item-id] item-id)
+    :load-item-and-kids item-id}))
 
 ;; navigate to the parent item
 (rf/reg-event-db
@@ -151,22 +165,6 @@
  (fn [db _]
    (or (bidi/match-route routes (:route-path db)) "nooomatch")))
 
-;; tools
-
-(defn find-element-item-id
-  "Return the data-item-id of element or one of its nearer parents."
-  [element]
-  (some #(.getAttribute % "data-item-id")
-        (take-while identity (take 8 (iterate #(.-parentElement %) element)))))
-
-(defn load-item-and-kids [item-id]
-  "Load the item item-id and its kids."
-  (firebase/get-items-by-id
-   [item-id]
-   (fn [items]
-     (rf/dispatch [:update-items items])
-     (firebase/get-items-by-id (-> items first (get "kids")) :update-items))))
-
 ;; components
 
 (defn spinner
@@ -195,8 +193,7 @@
                                :justify-content "space-between"
                                :align-items "baseline"
                                :padding "16px 10px"}
-                       :class (if selected? (str "selected") (str "not-selected"))
-                       :data-item-id (story "id")}
+                       :class (if selected? (str "selected") (str "not-selected"))}
            [:a {:style {:flex "0 1 auto" :width "100%"}
                 :href "/"}
             (story "title")]
@@ -210,14 +207,15 @@
       [:div.story-list
        (if (and (seq @stories) (every? #(seq (get @items %)) @stories))
          (doall (for [story-id @stories]
-                  [:div {:key story-id}
+                  [:div {:key story-id :on-touch-start #(rf/dispatch [:navigation-set-next-item-id story-id])}
                    [story-item (get @items story-id)]]))
          [spinner "loading stories"])])))
 
 (defn comment-list-item [item-id]
   (let [item (rf/subscribe [:item item-id])]
     (fn []
-      [:div.comment {:data-item-id (if (get @item "kids") (get @item "id") "")}
+      [:div.comment {:data-item-id (if (get @item "kids") (get @item "id") "")
+                     :on-touch-start #(rf/dispatch [:navigation-set-next-item-id item-id])}
        [:div.content {:dangerouslySetInnerHTML {:__html (get @item "text")}}]
        [:div.item
         (let [username (get @item "by")
@@ -244,12 +242,9 @@
            ^{:key k-id} [comment-list-item k-id])
          [spinner "loading comments"])])))
 
-(defn swipe [children slide-change-callback]
-  "Container component that uses Swipe.js to navigate between children."
-  ;; be careful when using it with 2 slides and
-  ;; continous-mode, it will create 2 additional slides
-  ;; by cloning child 1 and 2 - not sure how react
-  ;; reacts to this
+(defn swipe-nav-component
+  "Wrap the native js swipe-nav component in reagent."
+  []
   (let [container-styles {;; swipe-styles
                           :overflow "hidden" :visibility "hidden" :position "relative"
                           ;; enable vertical scrolling of individual slides
@@ -261,37 +256,27 @@
         child-styles {;; swipe styles
                       :float "left" :width "100%" :position "relative" :transitionProperty "transform"
                       ;; enable vertical scrolling of individual slides
-                      :height "100%" :overflow-y "scroll"}
-        swipe-object (atom nil)
-        current-index (atom nil)]
+                      :height "100%" :overflow-y "auto"}
+        sw (atom nil)
+        slide-index (atom 0)
+        on-index-update (fn [index]
+                          (let [old-index @slide-index]
+                            (reset! slide-index index)
+                            (if (< index old-index)
+                              (rf/dispatch [:navigation-up])
+                              (rf/dispatch [:navigation-down]))))
+        navigation (rf/subscribe [:navigation])
+        items (rf/subscribe [:items])
+        next-item-has-kids? (reaction (-> @items (get (:next-item-id @navigation)) (get "kids") boolean))]
     (reagent/create-class
-     {:display-name "swipe"
-      :component-did-mount
-      (fn [this]
-        ;; see https://github.com/lyfeyaj/swipe#config-options
-        (reset! swipe-object (js/Swipe (reagent/dom-node this)
-                                       (clj->js {:continuous false
-                                                 :slideStopCallback (fn [slide-index-chanded? index]
-                                                                      (cond
-                                                                        (< index @current-index)
-                                                                        ;; slide left
-                                                                        (rf/dispatch [:navigation-up])
-                                                                        (< @current-index index)
-                                                                        ;; slide right
-                                                                        (rf/dispatch [:navigation-down]))
-                                                                      (reset! current-index index))
-                                                 :slideStartCallback (fn [slide-element]
-                                                                       (reset! (:percent-swiped animation-state) 0)
-                                                                       (let [item-id (not-empty (find-element-item-id slide-element))]
-                                                                         (when item-id
-                                                                           (rf/dispatch [:navigation-set-next-item-id (js/parseInt item-id)])
-                                                                           ;; ;; load the item
-                                                                           (load-item-and-kids item-id))
-                                                                         (clj->js {:allowSlidingLeft true
-                                                                                   :allowSlidingRight (boolean item-id)})))}))))
+     {:display-name "swipe-nav-component"
+      :component-did-mount (fn [this]
+                             (let [options (clj->js {:container (reagent/dom-node this)
+                                                     :onIndexUpdate on-index-update})]
+                               (reset! sw (-> js/swipe-nav .-default (.create options)))))
       :component-will-unmount (fn []
-                                (.kill @swipe-object)
-                                (reset! swipe-object nil))
+                                (.kill @sw)
+                                (reset! sw nil))
       :reagent-render (fn [children]
                         ;; container
                         [:div {:style container-styles}
@@ -299,7 +284,9 @@
                          [:div {:style wrapper-styles}
                           ;; children
                           (map-indexed
-                           (fn [i c] [:div {:style child-styles :key i}
+                           (fn [i c] [:div {:style child-styles
+                                            :key i
+                                            :onTouchStart #(.setIsContentAvailable @sw (clj->js {:right @next-item-has-kids? :left true}))}
                                       (if (coll? c)
                                         c
                                         [c])])
@@ -314,9 +301,10 @@
     (fn []
       [:div {:style {;; enable vertical scrolling of individual slides
                      :position "absolute" :top 0 :bottom 0 :left 0 :right 0}}
-       [swipe (apply conj []
-                     story-list
-                     (map (fn [i] [comment-list i]) (range comment-nesting-limit)))]])))
+       [swipe-nav-component
+        (apply conj []
+               story-list
+               (map (fn [i] [comment-list i]) (range comment-nesting-limit)))]])))
 
 ;; TODO:
 ;; - research first-class components
@@ -327,6 +315,11 @@
   (firebase/get-topstories 25 (fn [topstory-ids]
                                 (rf/dispatch [:topstories topstory-ids])
                                 (firebase/get-items-by-id topstory-ids :update-items))))
+
+(defn on-js-load []
+  (rf/clear-subscription-cache!)
+  (swap! re-frame.db/app-db assoc-in [:navigation :item-path] [])
+  (reagent/render [root-view] (.getElementById js/document "app-container")))
 
 (defn ^:export run
   [root-element]

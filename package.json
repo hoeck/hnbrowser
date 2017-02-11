@@ -11,7 +11,8 @@
     "http-server": "http-server -c-1 --silent build",
     "html-watch": "cpx html/index.html build --watch",
     "nrepl": "npm run clean && concurrently -kr 'npm run http-server' 'npm run html-watch' 'cljsbuild nrepl --figwheel'",
-    "repl": "npm run clean && concurrently -kr 'npm run http-server' 'npm run html-watch' 'cljsbuild repl --figwheel'"
+    "repl": "npm run clean && concurrently -kr 'npm run http-server' 'npm run html-watch' 'cljsbuild repl --figwheel'",
+    "build-production": "npm run clean && cljsbuild --production"
   },
   "repository": {
     "type": "git",
@@ -37,12 +38,15 @@
     "onJsLoad": "app.core/on-js-load",
     "target": "build/js/main.js",
     "assetPath": "js",
-    "foreignLibs": [{
-      "file": "html/js/swipe-nav.js",
-      "provides": ["swipe-nav"],
-      "moduleType": ":es6"
-    }],
-    "languageIn": ":ecmascript6",
+    "compilerOptions": {
+      ":foreign-libs": [{
+        ":file": "html/js/swipe-nav.js",
+        ":provides": ["swipe-nav"],
+        ":module-type": ":es6"
+      }],
+      ":language-out": ":ecmascript5",
+      ":language-in": ":ecmascript6"
+    },
     "dependencies": {
       "org.clojure/clojure": "1.9.0-alpha14",
       "org.clojure/clojurescript": "1.9.293",

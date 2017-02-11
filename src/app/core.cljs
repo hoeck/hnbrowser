@@ -5,23 +5,22 @@
             [re-frame.core :as rf]
             [goog.events :as events]
             [goog.history.EventType :as EventType]
-            [secretary.core :as secretary]
+            ;; [secretary.core :as secretary]
             [bidi.bidi :as bidi]
             [app.firebase :as firebase]
             [app.format :as format]
 
             ;; websocket repl
-            [weasel.repl :as repl]
+            ;; [weasel.repl :as repl]
 
             ;; browser repl
-            [clojure.browser.repl :as brepl]
+            ;; [clojure.browser.repl :as brepl]
 
-            [swipe-nav :as swipe-nav]
-            )
+            [swipe-nav :as swipe-nav])
   (:import goog.history.Html5History
            [goog.String]))
 
-(enable-console-print!)
+;; (enable-console-print!)
 ;; (println "Hello world!")
 
 ;; "native" cljs repl

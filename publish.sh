@@ -13,15 +13,13 @@ if [ `git status --porcelain` ] ; then
 fi
 
 echo "# compiling clojurescript for production"
-boot build
+npm run build-production
 
 echo "# preparing gh-pages branch"
 cp html/index.html . && git add index.html
-cp -r html/js .      && git add js/*
-cp target/main.js .  && git add main.js
+mkdir js && cp build/js/main.js js/main.js && git add js/main.js
 
 echo "# creating (temporary) commit for gh-pages"
-git rm -r html src test boot.properties build.boot publish.sh
 git commit -m "publish $(git rev-parse HEAD) to gh-pages"
 
 echo "# pushing to gh-pages"
